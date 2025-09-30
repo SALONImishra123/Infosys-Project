@@ -1,0 +1,20 @@
+{
+  "name": "nlu-trainer-evaluator",
+  "version": "1.0.0",
+  "description": "Chatbot NLU Trainer & Evaluator - Full Stack Application",
+  "main": "backend/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "npm run dev --prefix backend",
+    "client": "npm start --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "install-deps": "npm install && npm install --prefix backend && npm install --prefix frontend"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": ["nlu", "chatbot", "annotation", "training", "react", "nodejs"],
+  "author": "NLU Trainer Team",
+  "license": "MIT"
+}

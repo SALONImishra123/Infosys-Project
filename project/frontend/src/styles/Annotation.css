@@ -1,0 +1,472 @@
+.annotation-interface {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+
+.annotation-header {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.annotation-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.annotation-progress {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.annotation-content {
+  padding: 2rem;
+}
+
+.annotation-section {
+  margin-bottom: 2rem;
+}
+
+.annotation-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-icon {
+  width: 32px;
+  height: 32px;
+  background: #14b8a6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a365d;
+  margin: 0;
+}
+
+/* Text Annotation */
+.text-input-container {
+  margin-bottom: 1.5rem;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.annotation-display {
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 120px;
+  font-size: 1rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Entity Highlighting */
+.entity-highlight {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 500;
+  border: 1px solid;
+  margin: 0 0.125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.entity-location {
+  background-color: rgba(20, 184, 166, 0.1);
+  border-color: #14b8a6;
+  color: #0f766e;
+}
+
+.entity-date {
+  background-color: rgba(237, 137, 54, 0.1);
+  border-color: #ed8936;
+  color: #c05621;
+}
+
+.entity-person {
+  background-color: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
+  color: #6d28d9;
+}
+
+.entity-organization {
+  background-color: rgba(236, 72, 153, 0.1);
+  border-color: #ec4899;
+  color: #be185d;
+}
+
+.entity-highlight:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Intent Selection */
+.intent-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.intent-button {
+  padding: 0.75rem 1.25rem;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #4a5568;
+}
+
+.intent-button:hover {
+  border-color: #3182ce;
+  color: #3182ce;
+  transform: translateY(-1px);
+}
+
+.intent-button.active {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  border-color: #2c5aa0;
+  color: white;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3);
+}
+
+.custom-intent-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+/* Entity Tools */
+.entity-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.entity-tool {
+  padding: 0.75rem 1.25rem;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #4a5568;
+  position: relative;
+}
+
+.entity-tool:hover {
+  border-color: #14b8a6;
+  color: #14b8a6;
+  transform: translateY(-1px);
+}
+
+.entity-tool.active {
+  background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+  border-color: #0f766e;
+  color: white;
+  box-shadow: 0 2px 4px rgba(20, 184, 166, 0.3);
+}
+
+.entity-instructions {
+  background: #e6fffa;
+  border: 1px solid #81e6d9;
+  color: #234e52;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+/* Action Buttons */
+.annotation-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.action-button {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.action-save {
+  background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(20, 184, 166, 0.3);
+}
+
+.action-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(20, 184, 166, 0.4);
+}
+
+.action-next {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3);
+}
+
+.action-next:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.4);
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Model Training Section */
+.model-training {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.model-training-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.model-training-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a365d;
+  margin-bottom: 0.5rem;
+}
+
+.model-backends {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.backend-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.backend-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3182ce;
+}
+
+.backend-card.selected {
+  border-color: #3182ce;
+  background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+}
+
+.backend-logo {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #3182ce 0%, #2c5aa0 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.backend-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a365d;
+  margin-bottom: 0.5rem;
+}
+
+.backend-description {
+  color: #718096;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.train-button {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.train-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(56, 161, 105, 0.4);
+}
+
+.train-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.training-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #38a169;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.status-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-ready {
+  background: #c6f6d5;
+  color: #2f855a;
+}
+
+.status-training {
+  background: #fed7cc;
+  color: #c05621;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .annotation-content {
+    padding: 1rem;
+  }
+  
+  .annotation-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .annotation-actions {
+    flex-direction: column;
+  }
+  
+  .intent-buttons,
+  .entity-tools {
+    justify-content: center;
+  }
+  
+  .model-backends {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .intent-button,
+  .entity-tool {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .text-input {
+    min-height: 100px;
+  }
+  
+  .backend-card {
+    padding: 1rem;
+  }
+  
+  .backend-logo {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+}

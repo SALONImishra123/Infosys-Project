@@ -1,0 +1,7 @@
+POST http://localhost:5050/api/models/predict
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTc0OTUwMTIsImV4cCI6MTc1ODA5OTgxMn0.QiAvkvIUJbSzqAwCZpPy8FdUstJmDc99sGit88BKu9E
+
+{
+  "text": "I want to book a flight to India"
+}
