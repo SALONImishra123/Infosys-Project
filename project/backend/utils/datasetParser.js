@@ -24,8 +24,26 @@ const parseCSV = (csvData) => {
 
 // Process CSV data into NLU format
 const processCSVData = (csvData) => {
+  if (!csvData || csvData.length === 0) {
+    return {
+      data: { intents: [], entities: [], rawData: csvData },
+      statistics: { totalExamples: 0, totalIntents: 0, totalEntities: 0 }
+    };
+  }
+
+  // quick guard to detect evaluation-only CSVs
+  const sample = csvData[0];
+  const candidateKeys = Object.keys(sample).map(k => k.toLowerCase());
+  const hasTextLike = candidateKeys.some(k => ['text','example','sentence','utterance'].includes(k));
+  const hasIntentLike = candidateKeys.some(k => ['intent','label'].includes(k));
+
+  if (!hasTextLike && !hasIntentLike) {
+    throw new Error('CSV does not contain NLU columns (text/intent). Did you upload evaluation results (y_true/y_pred)?');
+  }
+
   const intentsMap = new Map();
   const entitiesMap = new Map();
+
 
   csvData.forEach(row => {
     // Expecting CSV columns: text, intent, entities (optional)

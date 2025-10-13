@@ -1,3 +1,59 @@
+/* icon + input alignment */
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dcdcdc;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  margin-top: 6px;
+}
+
+.input-group .input-icon {
+  color: #6b6b6b;
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.input-group input.form-control {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+/* small button for the eye icon (unstyled button but accessible) */
+.icon-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  margin-left: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+}
+
+/* optional: remove default focus outline and add custom */
+.icon-btn:focus {
+  outline: 2px solid rgba(76, 175, 80, 0.25);
+  border-radius: 4px;
+}
+
+/* link-button (switch) style */
+.link-button {
+  background: none;
+  border: none;
+  color: #2b8a3e;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0 4px;
+  font-weight: 600;
+}
+
 .auth-container {
   min-height: 100vh;
   display: flex;

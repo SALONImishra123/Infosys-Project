@@ -1,105 +1,80 @@
+// controllers/annotationController.js
 import { validationResult } from 'express-validator';
-import Annotation from '../models/Annotation.js';
 import Workspace from '../models/Workspace.js';
+import Annotation from '../models/Annotation.js';
+
+// Helper to get userId from req
+const getUserId = (req) => req?.user?.userId || req?.user?._id || null;
 
 // Create annotation
 export const createAnnotation = async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
-      });
-    }
+    if (!errors.isEmpty())
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
 
-    const { text, intent, entities, workspaceId, datasetId, notes } = req.body;
+    const { text, intent, entities } = req.body;
+    const { workspaceId } = req.params;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
-    // Verify workspace ownership
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      owner: req.user._id
-    });
+    // normalize intent (accept either string or object { name })
+    const intentName = typeof intent === 'string' ? intent : (intent && intent.name) ? intent.name : null;
+    if (!intentName) return res.status(400).json({ message: 'Intent name is required' });
 
-    if (!workspace) {
-      return res.status(404).json({ message: 'Workspace not found' });
-    }
+    // Check workspace ownership
+    const workspace = await Workspace.findOne({ _id: workspaceId, owner: userId });
+    if (!workspace) return res.status(404).json({ message: 'Workspace not found' });
 
     const annotation = new Annotation({
       text,
-      intent,
-      entities: entities || [],
+      intent: intentName,
+      entities: Array.isArray(entities) ? entities.map(e => ({ entity: e.entity, value: e.value })) : [],
       workspace: workspaceId,
-      dataset: datasetId,
-      annotatedBy: req.user._id,
-      notes
+      createdBy: userId
     });
 
     await annotation.save();
 
-    // Add annotation to workspace
-    await Workspace.findByIdAndUpdate(workspaceId, {
-      $push: { annotations: annotation._id }
-    });
+    // Add annotation to workspace (avoid duplicates)
+    if (!workspace.annotations) workspace.annotations = [];
+    workspace.annotations.push(annotation._id);
+    await workspace.save();
 
-    await annotation.populate('annotatedBy', 'name email');
-
-    res.status(201).json({
-      message: 'Annotation saved successfully',
-      annotation
-    });
+    res.status(201).json({ message: 'Annotation created successfully', annotation });
   } catch (error) {
     console.error('Create annotation error:', error);
-    res.status(500).json({ message: 'Failed to save annotation' });
+    res.status(500).json({ message: 'Failed to create annotation', error: error.message });
   }
 };
 
-// Get workspace annotations
+// Get annotations for a workspace
 export const getWorkspaceAnnotations = async (req, res) => {
   try {
     const { workspaceId } = req.params;
-    const { page = 1, limit = 50, intent, validated } = req.query;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
-    // Verify workspace ownership
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      owner: req.user._id
-    });
+    const workspace = await Workspace.findOne({ _id: workspaceId, owner: userId });
+    if (!workspace) return res.status(404).json({ message: 'Workspace not found' });
 
-    if (!workspace) {
-      return res.status(404).json({ message: 'Workspace not found' });
-    }
+    const annotations = await Annotation.find({ workspace: workspaceId })
+      .lean()
+      .populate ? await Annotation.find({ workspace: workspaceId }).populate('createdBy', 'name email').sort({ createdAt: -1 }) : await Annotation.find({ workspace: workspaceId }).sort({ createdAt: -1 });
 
-    // Build filter
-    const filter = { workspace: workspaceId };
-    if (intent) filter['intent.name'] = intent;
-    if (validated !== undefined) filter.isValidated = validated === 'true';
+    // if we used lean() above we can't populate in the same chain — above is defensive:
+    // to keep simple, if populate exists we'll run that version (populating createdBy), else use lean()
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Normalize response shape if needed
+    const normalized = Array.isArray(annotations) ? annotations.map(a => ({
+      ...a,
+      intent: typeof a.intent === 'object' ? (a.intent.name || a.intent) : a.intent
+    })) : [];
 
-    const [annotations, total] = await Promise.all([
-      Annotation.find(filter)
-        .select('-__v')
-        .populate('annotatedBy', 'name email')
-        .populate('dataset', 'name')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      Annotation.countDocuments(filter)
-    ]);
-
-    res.json({
-      annotations,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
-    });
+    res.json({ annotations: normalized, count: normalized.length });
   } catch (error) {
     console.error('Get annotations error:', error);
-    res.status(500).json({ message: 'Failed to fetch annotations' });
+    res.status(500).json({ message: 'Failed to fetch annotations', error: error.message });
   }
 };
 
@@ -107,25 +82,35 @@ export const getWorkspaceAnnotations = async (req, res) => {
 export const getAnnotationById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
     const annotation = await Annotation.findById(id)
       .populate('workspace', 'name owner')
-      .populate('dataset', 'name')
-      .populate('annotatedBy', 'name email');
+      .populate('createdBy', 'name email');
 
-    if (!annotation) {
-      return res.status(404).json({ message: 'Annotation not found' });
-    }
+    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
 
-    // Verify workspace ownership
-    if (annotation.workspace.owner.toString() !== req.user._id.toString()) {
+    if (!annotation.workspace || !annotation.workspace.owner) {
+      // defensive: if workspace not populated, fetch
+      const ws = await Workspace.findById(annotation.workspace);
+      if (!ws || ws.owner.toString() !== userId.toString()) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else if (annotation.workspace.owner.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    res.json({ annotation });
+    // Normalize intent if stored as object
+    const normalized = {
+      ...annotation.toObject(),
+      intent: typeof annotation.intent === 'object' ? (annotation.intent.name || annotation.intent) : annotation.intent
+    };
+
+    res.json({ annotation: normalized });
   } catch (error) {
     console.error('Get annotation error:', error);
-    res.status(500).json({ message: 'Failed to fetch annotation' });
+    res.status(500).json({ message: 'Failed to fetch annotation', error: error.message });
   }
 };
 
@@ -133,41 +118,33 @@ export const getAnnotationById = async (req, res) => {
 export const updateAnnotation = async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
-      });
-    }
+    if (!errors.isEmpty())
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
 
     const { id } = req.params;
-    const { text, intent, entities, isValidated, notes } = req.body;
+    const { text, intent, entities } = req.body;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
     const annotation = await Annotation.findById(id).populate('workspace', 'owner');
-
-    if (!annotation) {
-      return res.status(404).json({ message: 'Annotation not found' });
-    }
-
-    // Verify workspace ownership
-    if (annotation.workspace.owner.toString() !== req.user._id.toString()) {
+    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
+    if (!annotation.workspace || annotation.workspace.owner.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Update annotation
-    const updatedAnnotation = await Annotation.findByIdAndUpdate(
-      id,
-      { text, intent, entities, isValidated, notes },
-      { new: true, runValidators: true }
-    ).populate('annotatedBy', 'name email');
+    // normalize intent (string or object)
+    const intentName = typeof intent === 'string' ? intent : (intent && intent.name) ? intent.name : null;
+    if (!intentName) return res.status(400).json({ message: 'Intent name is required' });
 
-    res.json({
-      message: 'Annotation updated successfully',
-      annotation: updatedAnnotation
-    });
+    annotation.text = text !== undefined ? text : annotation.text;
+    annotation.intent = intentName;
+    annotation.entities = Array.isArray(entities) ? entities.map(e => ({ entity: e.entity, value: e.value })) : annotation.entities || [];
+    await annotation.save();
+
+    res.json({ message: 'Annotation updated successfully', annotation });
   } catch (error) {
     console.error('Update annotation error:', error);
-    res.status(500).json({ message: 'Failed to update annotation' });
+    res.status(500).json({ message: 'Failed to update annotation', error: error.message });
   }
 };
 
@@ -175,74 +152,68 @@ export const updateAnnotation = async (req, res) => {
 export const deleteAnnotation = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
     const annotation = await Annotation.findById(id).populate('workspace', 'owner');
-
-    if (!annotation) {
-      return res.status(404).json({ message: 'Annotation not found' });
-    }
-
-    // Verify workspace ownership
-    if (annotation.workspace.owner.toString() !== req.user._id.toString()) {
+    if (!annotation) return res.status(404).json({ message: 'Annotation not found' });
+    if (!annotation.workspace || annotation.workspace.owner.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     await Annotation.findByIdAndDelete(id);
 
     // Remove annotation from workspace
-    await Workspace.findByIdAndUpdate(annotation.workspace._id, {
-      $pull: { annotations: id }
-    });
+    try {
+      await Workspace.findByIdAndUpdate(annotation.workspace._id, { $pull: { annotations: id } });
+    } catch (e) {
+      // Not critical if workspace update fails; log for debugging
+      console.error('Failed to remove annotation ref from workspace:', e);
+    }
 
     res.json({ message: 'Annotation deleted successfully' });
   } catch (error) {
     console.error('Delete annotation error:', error);
-    res.status(500).json({ message: 'Failed to delete annotation' });
+    res.status(500).json({ message: 'Failed to delete annotation', error: error.message });
   }
 };
 
-// Get annotation statistics
 export const getAnnotationStats = async (req, res) => {
   try {
     const { workspaceId } = req.params;
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
-    // Verify workspace ownership
-    const workspace = await Workspace.findOne({
-      _id: workspaceId,
-      owner: req.user._id
-    });
+    const workspace = await Workspace.findOne({ _id: workspaceId, owner: userId });
+    if (!workspace) return res.status(404).json({ message: 'Workspace not found' });
 
-    if (!workspace) {
-      return res.status(404).json({ message: 'Workspace not found' });
-    }
+    // Total annotations
+    const totalAnnotations = await Annotation.countDocuments({ workspace: workspaceId });
 
-    const [totalAnnotations, validatedAnnotations, intentStats, entityStats] = await Promise.all([
-      Annotation.countDocuments({ workspace: workspaceId }),
-      Annotation.countDocuments({ workspace: workspaceId, isValidated: true }),
-      Annotation.aggregate([
-        { $match: { workspace: workspace._id } },
-        { $group: { _id: '$intent.name', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-      ]),
-      Annotation.aggregate([
-        { $match: { workspace: workspace._id } },
-        { $unwind: '$entities' },
-        { $group: { _id: '$entities.entity', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-      ])
+    // Unique intents & entities (examples)
+    const intentsAgg = await Annotation.aggregate([
+      { $match: { workspace: workspace._id } },
+      { $group: { _id: '$intent' } },
+      { $project: { intent: '$_id', _id: 0 } }
+    ]);
+
+    const entitiesAgg = await Annotation.aggregate([
+      { $match: { workspace: workspace._id } },
+      { $unwind: { path: '$entities', preserveNullAndEmptyArrays: true } },
+      { $group: { _id: '$entities.entity' } },
+      { $project: { entity: '$_id', _id: 0 } }
     ]);
 
     const stats = {
       total: totalAnnotations,
-      validated: validatedAnnotations,
-      pending: totalAnnotations - validatedAnnotations,
-      intents: intentStats,
-      entities: entityStats
+      intents: intentsAgg.map(i => (typeof i.intent === 'object' ? (i.intent.name || i.intent) : i.intent)).filter(Boolean),
+      entities: entitiesAgg.map(e => e.entity).filter(Boolean),
+      validated: 0 // placeholder — extend if you track validation status
     };
 
     res.json({ stats });
   } catch (error) {
     console.error('Get annotation stats error:', error);
-    res.status(500).json({ message: 'Failed to fetch annotation statistics' });
+    res.status(500).json({ message: 'Failed to fetch annotation stats', error: error.message });
   }
 };

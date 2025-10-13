@@ -1,11 +1,14 @@
+// controllers/authController.js
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import User from '../models/User.js';
 
-// Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+  if (!process.env.JWT_SECRET) {
+    console.warn('JWT_SECRET is not set in environment variables');
+  }
+  return jwt.sign({ userId }, process.env.JWT_SECRET || 'dev-secret', {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
 
@@ -14,30 +17,23 @@ export const register = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
     const { name, email, password } = req.body;
 
-    // Check if user already exists
+    // Basic check
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Create new user
-    const user = new User({
-      name,
-      email,
-      password
-    });
-
+    const user = new User({ name, email, password });
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -56,32 +52,21 @@ export const login = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
     const { email, password } = req.body;
-
-    // Find user by email
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(403).json({ message: 'Account is deactivated' });
-    }
+    if (!user.isActive) return res.status(403).json({ message: 'Account is deactivated' });
 
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!isPasswordValid) return res.status(400).json({ message: 'Invalid email or password' });
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.json({
@@ -98,17 +83,17 @@ export const login = async (req, res) => {
 // Get user profile
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // auth middleware attaches req.user.userId
+    const userId = req?.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
-    res.json({
-      user: user.toJSON()
-    });
+    const user = await User.findById(userId).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ user: user.toJSON() });
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Failed to fetch profile' });
+    res.status(500).json({ message: 'Failed to fetch profile', error: error.message });
   }
 };
 
@@ -117,24 +102,23 @@ export const updateProfile = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
-    const { name } = req.body;
-    const userId = req.user._id;
+    const userId = req?.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Missing authenticated user' });
 
+    const { name } = req.body;
     const user = await User.findByIdAndUpdate(
       userId,
       { name },
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.json({
       message: 'Profile updated successfully',
@@ -142,6 +126,6 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Failed to update profile' });
+    res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 };

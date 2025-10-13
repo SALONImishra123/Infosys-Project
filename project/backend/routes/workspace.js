@@ -9,10 +9,17 @@ import {
   getWorkspaceStats
 } from '../controllers/workspaceController.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { getWorkspaceDatasets } from '../controllers/datasetController.js';
+import { getWorkspaceAnnotations, getAnnotationStats } from '../controllers/annotationController.js';
+import ModelMeta from '../models/ModelMeta.js';
+
+// 🟩 ADD THIS IMPORT
+import { trainModel } from '../controllers/modelController.js';
+
 
 const router = express.Router();
 
-// Validation rules
+// Validation
 const workspaceValidation = [
   body('name')
     .trim()
@@ -25,15 +32,33 @@ const workspaceValidation = [
     .withMessage('Description must be less than 500 characters')
 ];
 
-// All routes require authentication
+// Automatically attach authentication middleware
 router.use(authenticateToken);
 
-// Routes
+// CRUD
 router.post('/', workspaceValidation, createWorkspace);
 router.get('/', getUserWorkspaces);
-router.get('/:id', getWorkspaceById);
-router.put('/:id', workspaceValidation, updateWorkspace);
-router.delete('/:id', deleteWorkspace);
-router.get('/:id/stats', getWorkspaceStats);
+router.get('/:id([0-9a-fA-F]{24})', getWorkspaceById);
+router.put('/:id([0-9a-fA-F]{24})', workspaceValidation, updateWorkspace);
+router.delete('/:id([0-9a-fA-F]{24})', deleteWorkspace);
+router.get('/:id([0-9a-fA-F]{24})/stats', getWorkspaceStats);
+
+// Nested routes
+router.get('/:workspaceId([0-9a-fA-F]{24})/datasets', getWorkspaceDatasets);
+router.get('/:workspaceId([0-9a-fA-F]{24})/annotations', getWorkspaceAnnotations);
+router.get('/:workspaceId([0-9a-fA-F]{24})/annotations/stats', getAnnotationStats);
+router.get('/:workspaceId([0-9a-fA-F]{24})/models', async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+    const models = await ModelMeta.find({ workspace: workspaceId }).sort({ createdAt: -1 });
+    res.json(models);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch models' });
+  }
+});
+
+// 🟩 ADD THIS TRAINING ROUTE
+router.post('/:workspaceId([0-9a-fA-F]{24})/train', trainModel);
 
 export default router;

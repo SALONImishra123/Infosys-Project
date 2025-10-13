@@ -1,0 +1,69 @@
+# 1) Login (get token)
+POST http://localhost:5050/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "vaibhavi12@gmail.com",
+  "password": "vaibhavi12"
+}
+
+
+#####
+
+GET http://localhost:5050/api/workspaces
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+#####
+
+
+GET http://localhost:5050/api/annotations?workspaceId= 68c1244c6374c1b592b53ff3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+
+
+####
+
+
+
+POST http://localhost:5050/api/models/train
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+{
+  "name": "transformer_v1",
+  "workspaceId": "68da6d3030e2698d23d3b03<2",
+  "backend": "rasa" 
+}
+
+###
+
+###
+# 5) Poll model status (replace <MODEL_ID> with _id returned by train response)
+GET http://localhost:5050/api/models/68c1244c6374c1b592b53ff3/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+
+###
+GET http://localhost:5050/api/models/metrics
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+###
+GET http://localhost:5050/api/models/metrics/versions
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+
+###
+GET http://localhost:5050/api/models/confusion-matrix
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+#####
+GET http://localhost:5050/api/datasets/workspace/68c124606374c1b592b53ffa
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMxMjQ0YzYzNzRjMWI1OTJiNTNmZjMiLCJpYXQiOjE3NTkyODUwOTEsImV4cCI6MTc1OTg4OTg5MX0.tUUCVndcLc0P_SSN-lmBgC6sXUUU90IkYIu0fyRVTvA
+ #####
+ POST http://localhost:5050/api/workspaces/WORKSPACE_ID/annotations
+{
+  "text": "I want to book_flight of India on 20 Nov",
+  "intent": "book_flight",
+  "entities": [
+    { "entity": "location", "value": "India" },
+    { "entity": "date", "value": "20 Nov" }
+  ]
+}

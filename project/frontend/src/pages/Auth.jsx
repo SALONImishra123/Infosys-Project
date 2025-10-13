@@ -4,6 +4,10 @@ import ErrorMessage from '../components/ErrorMessage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/Auth.css';
 
+// FontAwesome React imports
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faEnvelope, faLock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -13,6 +17,7 @@ const Auth = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login, register } = useAuth();
 
@@ -66,42 +71,59 @@ const Auth = () => {
             {!isLogin && (
               <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  className="form-control"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required={!isLogin}
-                  placeholder="Enter your full name"
-                />
+                <div className="input-group">
+                  <FontAwesomeIcon icon={faUser} className="input-icon" />
+                  <input
+                    type="text"
+                    name="name"
+                    className="form-control"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required={!isLogin}
+                    placeholder="Enter your full name"
+                  />
+                </div>
               </div>
             )}
 
             <div className="form-group">
               <label className="form-label">Email Address</label>
-              <input
-                type="email"
-                name="email"
-                className="form-control"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="user@example.com"
-              />
+              <div className="input-group">
+                <FontAwesomeIcon icon={faEnvelope} className="input-icon" />
+                <input
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="user@example.com"
+                />
+              </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input
-                type="password"
-                name="password"
-                className="form-control"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Enter your password"
-              />
+              <div className="input-group">
+                <FontAwesomeIcon icon={faLock} className="input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="form-control"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                </button>
+              </div>
             </div>
 
             <button
@@ -122,11 +144,12 @@ const Auth = () => {
 
           <div className="auth-switch">
             <p>
-              {isLogin ? "Don't have an account?" : 'Already have an account?'}
+              {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 disabled={loading}
+                className="link-button"
               >
                 {isLogin ? 'Create New Account' : 'Sign In'}
               </button>

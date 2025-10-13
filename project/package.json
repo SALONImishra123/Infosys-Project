@@ -12,9 +12,17 @@
     "install-deps": "npm install && npm install --prefix backend && npm install --prefix frontend"
   },
   "dependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "node-fetch": "^3.3.2"
   },
-  "keywords": ["nlu", "chatbot", "annotation", "training", "react", "nodejs"],
+  "keywords": [
+    "nlu",
+    "chatbot",
+    "annotation",
+    "training",
+    "react",
+    "nodejs"
+  ],
   "author": "NLU Trainer Team",
   "license": "MIT"
 }

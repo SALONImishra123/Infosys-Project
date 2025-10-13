@@ -19,20 +19,22 @@ class ModelService {
     return response.json();
   }
 
+  // services/modelService.js (modify getWorkspaceModels only)
   async getWorkspaceModels(workspaceId, token) {
-    const response = await fetch(`${API_BASE_URL}/models/workspace/${workspaceId}`, {
+    const response = await fetch(`${API_BASE_URL}/workspaces/${workspaceId}/models`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch models' }));
       throw new Error(error.message || 'Failed to fetch models');
     }
 
     return response.json();
   }
+
 
   async getModelById(id, token) {
     const response = await fetch(`${API_BASE_URL}/models/${id}`, {

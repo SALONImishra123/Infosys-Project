@@ -1,0 +1,14 @@
+{
+  "version": 7,
+  "model_name": "customer support bot_rasa_1759370261736",
+  "workspace": "customer support bot",
+  "backend": "rasa",
+  "metrics": {
+    "Accuracy": 0.7789,
+    "Precision": 0.7412,
+    "Recall": 0.6077,
+    "F1-Score": 0.6678
+  },
+  "date": "2025-10-02T01:57:45.759Z",
+  "model_id": "68dddc15c9949e2e07a5a01d"
+}

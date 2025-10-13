@@ -8,14 +8,19 @@ import '../styles/Annotation.css';
 
 const ModelTraining = ({ selectedWorkspace }) => {
   const { token } = useAuth();
-  const [models, setModels] = useState([]);
+  const [models, setModels] = useState([]); // default empty array
   const [loading, setLoading] = useState(false);
   const [trainLoading, setTrainLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedBackend, setSelectedBackend] = useState('rasa');
-  const [annotationStats, setAnnotationStats] = useState(null);
-  const [selectedModel, setSelectedModel] = useState(null); // For modal
+  const [annotationStats, setAnnotationStats] = useState({
+    total: 0,
+    intents: [],
+    entities: [],
+    validated: 0
+  }); // default safe values
+  const [selectedModel, setSelectedModel] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const backends = [
@@ -45,12 +50,12 @@ const ModelTraining = ({ selectedWorkspace }) => {
 
   const loadModels = async () => {
     if (!selectedWorkspace) return;
-    
+
     try {
       setLoading(true);
       setError('');
       const response = await modelService.getWorkspaceModels(selectedWorkspace._id, token);
-      setModels(response.models);
+      setModels(response.models || []); // safe fallback
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,10 +65,15 @@ const ModelTraining = ({ selectedWorkspace }) => {
 
   const loadAnnotationStats = async () => {
     if (!selectedWorkspace) return;
-    
+
     try {
       const response = await annotationService.getAnnotationStats(selectedWorkspace._id, token);
-      setAnnotationStats(response.stats);
+      setAnnotationStats(response.stats || {
+        total: 0,
+        intents: [],
+        entities: [],
+        validated: 0
+      });
     } catch (err) {
       console.error('Failed to load annotation stats:', err);
     }
@@ -91,11 +101,11 @@ const ModelTraining = ({ selectedWorkspace }) => {
         workspaceId: selectedWorkspace._id,
         backend: selectedBackend,
         configuration: {
-          pipeline: selectedBackend === 'rasa' ? 
-            ['WhitespaceTokenizer', 'RegexFeaturizer', 'LexicalSyntacticFeaturizer', 'CountVectorsFeaturizer', 'DIETClassifier'] :
-            selectedBackend === 'spacy' ?
-            ['tok2vec', 'tagger', 'parser', 'ner'] :
-            ['tokenizer', 'model']
+          pipeline: selectedBackend === 'rasa'
+            ? ['WhitespaceTokenizer', 'RegexFeaturizer', 'LexicalSyntacticFeaturizer', 'CountVectorsFeaturizer', 'DIETClassifier']
+            : selectedBackend === 'spacy'
+            ? ['tok2vec', 'tagger', 'parser', 'ner']
+            : ['tokenizer', 'model']
         }
       };
 
@@ -148,7 +158,6 @@ const ModelTraining = ({ selectedWorkspace }) => {
 
   const handleTestModel = (model) => {
     alert(`Testing model: ${model.name}\nBackend: ${model.backend}`);
-    // Here you can integrate a proper test interface later
   };
 
   if (!selectedWorkspace) {
@@ -186,7 +195,7 @@ const ModelTraining = ({ selectedWorkspace }) => {
               </div>
               <div className="workspace-stats" style={{ justifyContent: 'flex-start', gap: '2rem' }}>
                 <div className="workspace-stat">
-                  <span className="workspace-stat-value">{annotationStats.total}</span>
+                  <span className="workspace-stat-value">{annotationStats.total || 0}</span>
                   <span className="workspace-stat-label">Total Annotations</span>
                 </div>
                 <div className="workspace-stat">
@@ -198,7 +207,7 @@ const ModelTraining = ({ selectedWorkspace }) => {
                   <span className="workspace-stat-label">Entity Types</span>
                 </div>
                 <div className="workspace-stat">
-                  <span className="workspace-stat-value">{annotationStats.validated}</span>
+                  <span className="workspace-stat-value">{annotationStats.validated || 0}</span>
                   <span className="workspace-stat-label">Validated</span>
                 </div>
               </div>
@@ -275,7 +284,7 @@ const ModelTraining = ({ selectedWorkspace }) => {
                       <div className="dataset-details">
                         <h4>{model.name}</h4>
                         <div className="dataset-meta">
-                          Backend: {model.backend.toUpperCase()} • Status: {model.status} • Training Data: {model.trainingData.annotationsCount} annotations
+                          Backend: {model.backend?.toUpperCase() || 'N/A'} • Status: {model.status || 'unknown'} • Training Data: {model.trainingData?.annotationsCount || 0} annotations
                         </div>
                         <div className="dataset-meta">
                           Created {new Date(model.createdAt).toLocaleDateString()}
@@ -285,7 +294,7 @@ const ModelTraining = ({ selectedWorkspace }) => {
                         </div>
                         {model.performance && (
                           <div className="dataset-meta">
-                            Accuracy: {(model.performance.accuracy * 100).toFixed(1)}% • F1-Score: {(model.performance.f1Score * 100).toFixed(1)}%
+                            Accuracy: {(model.performance.accuracy * 100 || 0).toFixed(1)}% • F1-Score: {(model.performance.f1Score * 100 || 0).toFixed(1)}%
                           </div>
                         )}
                       </div>
@@ -325,8 +334,8 @@ const ModelTraining = ({ selectedWorkspace }) => {
             {selectedModel.trainingCompleted && <p>Completed: {new Date(selectedModel.trainingCompleted).toLocaleString()}</p>}
             {selectedModel.performance && (
               <>
-                <p>Accuracy: {(selectedModel.performance.accuracy * 100).toFixed(1)}%</p>
-                <p>F1-Score: {(selectedModel.performance.f1Score * 100).toFixed(1)}%</p>
+                <p>Accuracy: {(selectedModel.performance.accuracy * 100 || 0).toFixed(1)}%</p>
+                <p>F1-Score: {(selectedModel.performance.f1Score * 100 || 0).toFixed(1)}%</p>
               </>
             )}
             <button className="btn btn-primary" onClick={closeModal}>Close</button>
@@ -338,3 +347,5 @@ const ModelTraining = ({ selectedWorkspace }) => {
 };
 
 export default ModelTraining;
+
+

@@ -1,3 +1,4 @@
+// middleware/auth.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
@@ -21,7 +22,13 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ message: 'Account is deactivated' });
     }
 
-    req.user = user;
+    // Attach both formats to support existing controllers
+    req.user = {
+      userId: user._id.toString(),
+      _id: user._id,
+      role: user.role
+    };
+
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -29,7 +36,7 @@ export const authenticateToken = async (req, res, next) => {
     } else if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ message: 'Token expired' });
     }
-    
+
     console.error('Auth middleware error:', error);
     res.status(500).json({ message: 'Authentication error' });
   }

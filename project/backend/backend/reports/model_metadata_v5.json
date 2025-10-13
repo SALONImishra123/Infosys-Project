@@ -1,0 +1,14 @@
+{
+  "version": 5,
+  "model_name": "Travel bot_rasa_1759370240615",
+  "workspace": "Travel bot",
+  "backend": "rasa",
+  "metrics": {
+    "Accuracy": 0.6819,
+    "Precision": 0.6399,
+    "Recall": 0.8135,
+    "F1-Score": 0.7163
+  },
+  "date": "2025-10-02T01:57:24.661Z",
+  "model_id": "68dddc00c9949e2e07a59fd7"
+}

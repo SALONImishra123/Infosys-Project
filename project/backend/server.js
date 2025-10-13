@@ -1,5 +1,7 @@
+// server.js (improved)
 import express from 'express';
 import cors from 'cors';
+import evalRoutes from './routes/eval.js';
 import dotenv from 'dotenv';
 import portfinder from 'portfinder';
 import connectDB from './config/db.js';
@@ -11,93 +13,122 @@ import modelRoutes from './routes/model.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import mongoose from 'mongoose';
+import metricsRoutes from './routes/metricsRoutes.js';
 
-// For __dirname in ES modules
+// __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+// Load env (robust path)
+const envPath = path.resolve(__dirname, '..', '.env');
+dotenv.config({ path: fs.existsSync(envPath) ? envPath : undefined });
 
-// Connect to MongoDB
-connectDB();
-
+// App & config
 const app = express();
+const DEFAULT_PORT = parseInt(process.env.PORT || '5050', 10);
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+// Reports dir (ensure exists)
+const REPORTS_DIR = path.join(__dirname, 'reports');
+fs.mkdirSync(REPORTS_DIR, { recursive: true });
 
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+const corsOptions = {
+  origin: (origin, callback) => {
+    // allow undefined origin (e.g., curl, server-side)
+    if (!origin) return callback(null, true);
+    // support comma-separated FRONTEND_URLs
+    const allowed = (FRONTEND_URL || '').split(',').map(s => s.trim());
+    if (allowed.includes(origin) || allowed.includes('*')) return callback(null, true);
+    return callback(new Error('CORS policy: origin denied'), false);
+  },
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Routes
+
+app.use('/api/eval', evalRoutes);
+app.use('/api/models', metricsRoutes); // metricsRoutes contains /metrics and /confusion-matrix endpoints
+
+// Serve reports folder publicly (so frontend can fetch /reports/confusion_matrix.png)
+app.use('/reports', express.static(REPORTS_DIR));
+
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/datasets', datasetRoutes);
-app.use('/api/annotations', annotationRoutes);
+app.use('/api/workspaces/:workspaceId/annotations', annotationRoutes);
 app.use('/api/models', modelRoutes);
 
-// --- Serve confusion matrix PNG ---
-app.get('/api/confusion-matrix', (req, res) => {
+// Public fallback single-file route (optional)
+app.get('/public/confusion-matrix', (req, res) => {
   try {
-    const cmPath = path.join(__dirname, 'reports', 'confusion_matrix.png'); 
-    if (!fs.existsSync(cmPath)) return res.status(404).json({ message: 'Confusion matrix not found' });
-    res.sendFile(cmPath);
+    const filePath = path.join(REPORTS_DIR, 'confusion_matrix.png');
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+    return res.status(404).json({ message: 'Confusion matrix not found' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch confusion matrix' });
+    console.error('Error sending public confusion matrix:', err);
+    return res.status(500).json({ message: 'Failed to send confusion matrix' });
   }
 });
 
-// --- Serve metrics JSON ---
-app.get('/api/models/metrics', (req, res) => {
-  try {
-    const metricsPath = path.join(__dirname, 'reports', 'eval.json'); 
-    if (!fs.existsSync(metricsPath)) return res.status(404).json({ message: 'Metrics not found' });
-    const metricsData = JSON.parse(fs.readFileSync(metricsPath, 'utf-8'));
-    res.json(metricsData);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch metrics' });
-  }
-});
+// Health
+app.get('/api/health', (req, res) => res.json({ status: 'OK', message: 'NLU Trainer API is running' }));
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'NLU Trainer API is running' });
-});
-
-// Error handling middleware
+// Error handling (last middlewares)
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Unhandled error:', err);
+  res.status(500).json({ message: err.message || 'Something went wrong!' });
 });
 
-// 404 handler
+// 404
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// --- Auto Port Detection ---
-const DEFAULT_PORT = process.env.PORT || 5050;
+// Start server only after DB connected
+async function startServer() {
+  try {
+    await connectDB(); // ensure this throws on failure
+    // optional: check mongoose connection
+    if (mongoose.connection && mongoose.connection.readyState !== 1) {
+      console.warn('Warning: mongoose not fully connected (state: ' + mongoose.connection.readyState + ')');
+    }
 
-portfinder.getPortPromise({ port: DEFAULT_PORT })
-  .then((port) => {
-    app.listen(port, () => {
+    const port = await portfinder.getPortPromise({ port: DEFAULT_PORT });
+    const server = app.listen(port, () => {
       console.log(`🚀 NLU Trainer Backend Server running on port ${port}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+      console.log(`🔗 Frontend URL(s): ${FRONTEND_URL}`);
+      console.log(`📁 Reports dir: ${REPORTS_DIR}`);
     });
-  })
-  .catch((err) => {
-    console.error("❌ Could not find a free port:", err);
-    process.exit(1);
-  });
 
-// --- Graceful Shutdown ---
-process.on('SIGINT', () => {
-  console.log("\n🛑 Server shutting down gracefully...");
-  process.exit(0);
-});
+    // graceful shutdown
+    const shutdown = async () => {
+      console.log('\n🛑 Server shutting down gracefully...');
+      server.close(async () => {
+        try {
+          await mongoose.disconnect();
+          console.log('✅ MongoDB disconnected');
+          process.exit(0);
+        } catch (e) {
+          console.error('Error during shutdown:', e);
+          process.exit(1);
+        }
+      });
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
+}
+
+startServer();

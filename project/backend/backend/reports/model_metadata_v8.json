@@ -1,0 +1,14 @@
+{
+  "version": 8,
+  "model_name": "transformer_v1",
+  "workspace": "customer support bot",
+  "backend": "rasa",
+  "metrics": {
+    "Accuracy": 0.9709,
+    "Precision": 0.9026,
+    "Recall": 0.8183,
+    "F1-Score": 0.8584
+  },
+  "date": "2025-10-02T03:44:21.993Z",
+  "model_id": "68ddf5111e9a27203e3c5f58"
+}

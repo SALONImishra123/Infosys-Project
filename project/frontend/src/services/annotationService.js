@@ -1,18 +1,27 @@
+// services/annotationService.js
 const API_BASE_URL = '/api';
 
 class AnnotationService {
   async createAnnotation(data, token) {
-    const response = await fetch(`${API_BASE_URL}/annotations`, {
+    // data must contain workspaceId
+    const { workspaceId } = data;
+    if (!workspaceId) throw new Error('workspaceId required');
+
+    const response = await fetch(`${API_BASE_URL}/workspaces/${workspaceId}/annotations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        text: data.text,
+        intent: data.intent,
+        entities: data.entities
+      }),
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to save annotation' }));
       throw new Error(error.message || 'Failed to save annotation');
     }
 
@@ -20,8 +29,8 @@ class AnnotationService {
   }
 
   async getWorkspaceAnnotations(workspaceId, params, token) {
-    const queryString = new URLSearchParams(params).toString();
-    const url = `${API_BASE_URL}/annotations/workspace/${workspaceId}${queryString ? '?' + queryString : ''}`;
+    const queryString = new URLSearchParams(params || {}).toString();
+    const url = `${API_BASE_URL}/workspaces/${workspaceId}/annotations${queryString ? '?' + queryString : ''}`;
     
     const response = await fetch(url, {
       headers: {
@@ -30,7 +39,7 @@ class AnnotationService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch annotations' }));
       throw new Error(error.message || 'Failed to fetch annotations');
     }
 
@@ -45,7 +54,7 @@ class AnnotationService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch annotation' }));
       throw new Error(error.message || 'Failed to fetch annotation');
     }
 
@@ -63,7 +72,7 @@ class AnnotationService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to update annotation' }));
       throw new Error(error.message || 'Failed to update annotation');
     }
 
@@ -79,7 +88,7 @@ class AnnotationService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to delete annotation' }));
       throw new Error(error.message || 'Failed to delete annotation');
     }
 
@@ -87,14 +96,14 @@ class AnnotationService {
   }
 
   async getAnnotationStats(workspaceId, token) {
-    const response = await fetch(`${API_BASE_URL}/annotations/workspace/${workspaceId}/stats`, {
+    const response = await fetch(`${API_BASE_URL}/workspaces/${workspaceId}/annotations/stats`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch annotation stats' }));
       throw new Error(error.message || 'Failed to fetch annotation stats');
     }
 
